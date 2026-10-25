@@ -16,20 +16,35 @@ import sys
 import time
 import uuid
 
+import json
+
 import requests
 from telethon import TelegramClient, functions, types
 from telethon.sessions import StringSession
 
-API_ID = int(os.environ["TELEGRAM_API_ID"])
-API_HASH = os.environ["TELEGRAM_API_HASH"]
-BOT_TOKEN = os.environ["TELEGRAM_APK_BOT_TOKEN"]
+# סודות חסרים — עוצרים עם הודעה ברורה (בלי לגלות ערכים)
+_missing = [k for k in ("TELEGRAM_API_ID", "TELEGRAM_API_HASH", "TELEGRAM_APK_BOT_TOKEN")
+            if not os.environ.get(k, "").strip()]
+if _missing:
+    print("חסרים Secrets בריפו (Settings → Secrets and variables → Actions → Repository secrets): "
+          + ", ".join(_missing))
+    sys.exit(1)
+
+API_ID = int(os.environ["TELEGRAM_API_ID"].strip())
+API_HASH = os.environ["TELEGRAM_API_HASH"].strip()
+BOT_TOKEN = os.environ["TELEGRAM_APK_BOT_TOKEN"].strip()
 GH_TOKEN = os.environ["GITHUB_TOKEN"]
 REPO = os.environ["REPO"]
-INBOX_ID = os.environ["INBOX_ID"]
-CHAT_ID = int(os.environ["CHAT_ID"])
-MESSAGE_ID = int(os.environ["MESSAGE_ID"])
 RESULT_URL = os.environ["RESULT_URL"]
 TAG = "apks"
+
+# פרטי ההודעה נקראים מקובץ האירוע ולא ממשתני סביבה — משתני סביבה של שלב
+# מודפסים בלוג הציבורי, ומזהה הצ'אט לא צריך להופיע שם.
+with open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8") as _f:
+    _payload = json.load(_f).get("client_payload") or {}
+INBOX_ID = str(_payload["id"])
+CHAT_ID = int(_payload["chat_id"])
+MESSAGE_ID = int(_payload["message_id"])
 
 GH = "https://api.github.com"
 GH_HEADERS = {"Authorization": f"Bearer {GH_TOKEN}", "Accept": "application/vnd.github+json"}

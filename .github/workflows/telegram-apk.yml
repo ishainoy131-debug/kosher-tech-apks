@@ -10,7 +10,8 @@
 #   TELEGRAM_APK_BOT_TOKEN — אותו טוקן כמו ב-Cloudflare
 #
 # ⚠️ הריפו ציבורי והלוג של כל ריצה גלוי — הסקריפט לא מדפיס שמות קבצים,
-# מזהים או טוקנים.
+# מזהים או טוקנים. משתני הסביבה של שלב מודפסים בלוג, ולכן פרטי ההודעה
+# (מזהה צ'אט וכו') נקראים בסקריפט מקובץ האירוע ולא מועברים כאן כמשתנים.
 # ==========================================================
 name: APK מטלגרם
 
@@ -41,8 +42,5 @@ jobs:
           TELEGRAM_APK_BOT_TOKEN: ${{ secrets.TELEGRAM_APK_BOT_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
-          INBOX_ID: ${{ github.event.client_payload.id }}
-          CHAT_ID: ${{ github.event.client_payload.chat_id }}
-          MESSAGE_ID: ${{ github.event.client_payload.message_id }}
           RESULT_URL: https://kosher-tech.com/api/telegram-apk?action=result
         run: python scripts/telegram_apk.py
