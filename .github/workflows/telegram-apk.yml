@@ -18,12 +18,21 @@ name: APK מטלגרם
 on:
   repository_dispatch:
     types: [telegram-apk]
+  # רשת ביטחון: מה שנשאר בתור (למשל אחרי שטלגרם ביקש להמתין) ממשיך לבד.
+  # בלי קבצים בתור — הריצה נגמרת תוך שניות, בלי להתחבר לטלגרם.
+  schedule:
+    - cron: '*/20 * * * *'
 
 permissions:
   contents: write   # העלאה ל-release
 
+# ‏ריצה אחת בכל פעם, והיא מורידה את כל התור. כך עשרות קבצים שנשלחו יחד =
+# התחברות אחת לטלגרם. (25.10.2026: ריצה לכל קובץ במקביל = עשרות התחברויות,
+# וטלגרם חסם את הבוט ל-46 דקות.) ריצה שממתינה מתבטלת כשמגיעה חדשה — לא חשוב,
+# כי כל ריצה לוקחת את כל מה שבתור.
 concurrency:
-  group: telegram-apk-${{ github.event.client_payload.id }}
+  group: telegram-apk
+  cancel-in-progress: false
 
 jobs:
   fetch:
@@ -34,7 +43,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install --quiet "telethon==1.40.0" "cryptg==0.5.0.post0" "requests==2.32.3"
+      - run: pip install --quiet "telethon==1.40.0" "cryptg==0.5.0.post0" "requests==2.32.3" "cryptography==43.0.3"
+      # ההתחברות לטלגרם נשמרת בין ריצות — מוצפנת במפתח שנגזר מטוקן הבוט (הריפו
+      # ציבורי, ומי שאין לו את הטוקן לא יכול לפענח אותה)
+      - uses: actions/cache/restore@v4
+        with:
+          path: .tg-session
+          key: tg-session-${{ github.run_id }}
+          restore-keys: tg-session-
       - name: הורדה מטלגרם והעלאה
         env:
           TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
@@ -44,3 +60,8 @@ jobs:
           REPO: ${{ github.repository }}
           RESULT_URL: https://kosher-tech.com/api/telegram-apk?action=result
         run: python scripts/telegram_apk.py
+      - uses: actions/cache/save@v4
+        if: always() && hashFiles('.tg-session') != ''
+        with:
+          path: .tg-session
+          key: tg-session-${{ github.run_id }}
