@@ -45,6 +45,9 @@ with open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8") as _f:
 INBOX_ID = str(_payload["id"])
 CHAT_ID = int(_payload["chat_id"])
 MESSAGE_ID = int(_payload["message_id"])
+# לאן עונים: בקבוצה — להודעה המקורית בקבוצה; בפרטי — לאותה הודעה
+NOTIFY_CHAT_ID = int(_payload.get("notify_chat_id") or CHAT_ID)
+NOTIFY_MESSAGE_ID = int(_payload.get("notify_message_id") or MESSAGE_ID)
 
 GH = "https://api.github.com"
 GH_HEADERS = {"Authorization": f"Bearer {GH_TOKEN}", "Accept": "application/vnd.github+json"}
@@ -66,7 +69,7 @@ def report(status, **extra):
 def tell_owner(text):
     try:
         requests.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-                      json={"chat_id": CHAT_ID, "text": text, "reply_to_message_id": MESSAGE_ID,
+                      json={"chat_id": NOTIFY_CHAT_ID, "text": text, "reply_to_message_id": NOTIFY_MESSAGE_ID,
                             "allow_sending_without_reply": True}, timeout=30)
     except requests.RequestException:
         pass
