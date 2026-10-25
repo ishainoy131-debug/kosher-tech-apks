@@ -1,0 +1,48 @@
+# ==========================================================
+# APK מטלגרם → GitHub Releases (תגית apks) → "ממתינים מטלגרם" בפאנל
+# ==========================================================
+# מופעל על ידי השרת של kosher-tech.com (functions/api/telegram-apk.js)
+# כשהבעלים שולח קובץ APK לבוט. מתחבר לטלגרם כבוט ב-MTProto (Telethon) —
+# כך אפשר להוריד עד 2GB, לא רק 20MB כמו ב-Bot API — ומעלה את הקובץ כאן.
+#
+# Secrets (Settings → Secrets and variables → Actions):
+#   TELEGRAM_API_ID, TELEGRAM_API_HASH — מ-my.telegram.org
+#   TELEGRAM_APK_BOT_TOKEN — אותו טוקן כמו ב-Cloudflare
+#
+# ⚠️ הריפו ציבורי והלוג של כל ריצה גלוי — הסקריפט לא מדפיס שמות קבצים,
+# מזהים או טוקנים.
+# ==========================================================
+name: APK מטלגרם
+
+on:
+  repository_dispatch:
+    types: [telegram-apk]
+
+permissions:
+  contents: write   # העלאה ל-release
+
+concurrency:
+  group: telegram-apk-${{ github.event.client_payload.id }}
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet "telethon==1.40.0" "cryptg==0.5.0.post0" "requests==2.32.3"
+      - name: הורדה מטלגרם והעלאה
+        env:
+          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+          TELEGRAM_APK_BOT_TOKEN: ${{ secrets.TELEGRAM_APK_BOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          INBOX_ID: ${{ github.event.client_payload.id }}
+          CHAT_ID: ${{ github.event.client_payload.chat_id }}
+          MESSAGE_ID: ${{ github.event.client_payload.message_id }}
+          RESULT_URL: https://kosher-tech.com/api/telegram-apk?action=result
+        run: python scripts/telegram_apk.py
